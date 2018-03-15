@@ -95,7 +95,8 @@ stopwords = create_stopwords(get_stopword_path())
 # print(stopwords)
 
 
-def remove_stopwords(words, stopwords):  # ストップワード除去
+# ストップワード除去 #TODO:こいつ変えなきゃヤヴァイ。引数にリストじゃなくてテキストをもってくるようにする。
+def remove_stopwords(words, stopwords):
     words = [word for word in words if word not in stopwords]
     return "".join(words)
 
@@ -115,10 +116,10 @@ big_form_list = [
     ["名詞", "動詞", "形容詞", "感動詞", "副詞", "助詞", "接頭詞", "助動詞", "連体詞", "フィラー", "その他"]
 ]
 
-input_file = ["./rawdata/twitter.txt",
-              "./rawdata/naver.txt", "./rawdata/yahoo.txt"]
-output_file = ["./wakati_data/twitter.txt", "./wakati_data/twitter_allform_wakati.txt",
-               "./wakati_data/twitter_noun_wakati.txt", "./wakati_data/twitter_without_kigou_wakati.txt"]
+input_file = ["./rawdata/sample.txt",
+              "./rawdata/twitter.txt", "./rawdata/yahoo.txt"]
+output_file = ["./wakati_data/sample.txt", "./wakati_data/sample_allform_wakati.txt",
+               "./wakati_data/sample_noun_wakati.txt", "./wakati_data/sample_without_kigou_wakati.txt"]
 
 for n_list in tqdm(range(len(big_form_list))):
     sleep(0.1)
@@ -136,6 +137,7 @@ for n_list in tqdm(range(len(big_form_list))):
         text = clean_text(text)
         text = zenkaku_hankaku(text)
         text = wakati_by_mecab(text)
+        # TODO:こいつ変えなきゃヤヴァイ。引数にリストじゃなくてテキストをもってくるようにする。
         text = remove_stopwords(text, stopwords)
         fw.write(text + "\n")
         text = f.readline()
