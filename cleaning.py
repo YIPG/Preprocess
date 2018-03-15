@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+#
+# 単語埋め込みベクトル（Word2Vec など）を行うための
+# テキストデータのゴミ取りを行う。
+#
+# 2018.03.14 初期作成 YIPG
+# 2018.03.15 改定 Tomi
+#
+
 import re
 import mojimoji
 import sys
@@ -5,10 +14,12 @@ import MeCab
 import os
 import time
 from tqdm import tqdm
-from time import sleep
 
 
-def clean_text(text):  # ゴミ処理, 中国語除けない
+#
+# ゴミ処理を行う。中国語除けない
+#
+def clean_text(text):
     replaced_text = '\n'.join(s.strip() for s in text.splitlines()[
                               0:] if s != '')  # ヘッダーがあれば削除(このデータはしなくてよい)
     replaced_text = replaced_text.lower()
@@ -51,37 +62,60 @@ def clean_text(text):  # ゴミ処理, 中国語除けない
     return replaced_text
 
 
-def zenkaku_hankaku(text):  # カタカナ半角を全角に, 数字英字全角を半角に
+#
+# カタカナ半角を全角に, 数字英字全角を半角に
+#
+def zenkaku_hankaku(text):
     re = mojimoji.zen_to_han(text, kana=False)
     re = mojimoji.han_to_zen(re, digit=False, ascii=False)
     return re
 
 
-def wakati_by_mecab(text):
+#
+# カタカナ半角を全角に, 数字英字全角を半角に
+#
+# TODO: サーバー上でどうやってNeologd入れる？？
+# できた。Neologdの辞書ファイル(自分は/usr/local/lib/mecab/dic/mecab-ipadic-neologdにあった。)をmecabrc(自分は/usr/local/etc/mecabrcにあった)
+# の辞書参照箇所にコピーする。(dicdir =  /usr/local/lib/mecab/dic/mecab-ipadic-neologd)。注意点はターミナル起動直後よりも上の階層にいくから、気が付きづらい場所にあること。
+#
+def wakati_by_mecab(text, form):
+    #print("wakati_by_mecab")
+    #print(form)
+    #print(text)
     tagger = MeCab.Tagger('')
     tagger.parse('')
     node = tagger.parseToNode(text)
     word_list = []
+    #print("koko")
     while node:
         pos = node.feature.split(",")[0]
-        if pos in form_list:   # 対象とする品詞
+
+        #print(pos)
+        #print(form)
+
+        #if pos in form_list:   # 対象とする品詞
+        if pos in form:   # 対象とする品詞
             word = node.surface
             word_list.append(word)
         node = node.next
     return " ".join(word_list)
-# TODO: サーバー上でどうやってNeologd入れる？？
-# できた。Neologdの辞書ファイル(自分は/usr/local/lib/mecab/dic/mecab-ipadic-neologdにあった。)をmecabrc(自分は/usr/local/etc/mecabrcにあった)
-# の辞書参照箇所にコピーする。(dicdir =  /usr/local/lib/mecab/dic/mecab-ipadic-neologd)。注意点はターミナル起動直後よりも上の階層にいくから、気が付きづらい場所にあること。
 
 
-def get_stopword_path():  # ストップワードテキストファイルはこのプログラムと同じディレクトリに保管してください
+#
+# ストップワードテキストファイルのパスの取得
+# ※このプログラムと同じディレクトリに保管してください
+#
+def get_stopword_path():
     name = os.path.dirname(os.path.abspath(__name__))
     joined_path = os.path.join(name, './stopwords.txt')
     data_path = os.path.normpath(joined_path)
     return data_path
 
 
-def create_stopwords(file_path):  # ストップワードのリスト(stopwords)作成
+#
+# ストップワードのリスト(stopwords)作成
+#
+def create_stopwords(file_path):
     stopwords = []
     for w in open(file_path, "r"):
         w = w.replace('\n', '')
@@ -90,64 +124,87 @@ def create_stopwords(file_path):  # ストップワードのリスト(stopwords)
     return stopwords
 
 
-# ストップワードリスト
-stopwords = create_stopwords(get_stopword_path())
-# print(stopwords)
-
-
-def remove_stopwords(words, stopwords):  # ストップワード除去
+#
+# ストップワード除去
+#
+def remove_stopwords(words, stopwords):
     words = [word for word in words if word not in stopwords]
     return "".join(words)
 
 
-# 実行する
+#
+# 実行プログラム
+#
 
 #form_list = ["名詞", "動詞", "形容詞", "感動詞", "副詞", "助詞","記号", "接頭詞", "助動詞", "連体詞", "フィラー", "その他"]
 
 t1 = time.time()
 print("処理開始しました")
 
-big_form_list = [
+form_option = [
     ["名詞", "動詞", "形容詞"],
-    ["名詞", "動詞", "形容詞", "感動詞", "副詞", "助詞", "記号",
-        "接頭詞", "助動詞", "連体詞", "フィラー", "その他"],
+    ["名詞", "動詞", "形容詞", "感動詞", "副詞", "助詞", "記号", "接頭詞", "助動詞", "連体詞", "フィラー", "その他"],
     ["名詞"],
     ["名詞", "動詞", "形容詞", "感動詞", "副詞", "助詞", "接頭詞", "助動詞", "連体詞", "フィラー", "その他"]
 ]
 
-dir_data = "./rawdata/"
-dir_output = "./wakati_data/"
-dir_clensed = "./clensed_data/"
-input_file = ["twitter.txt",
-              "naver.txt", "yahoo.txt"]
-input_file_dir=[]
-for i in input_file:
-    str=dir_data + 
-    input_file_dir.append(i)
+output_file_dir = "./wakati_data/"
 
-for n_list in tqdm(range(len(big_form_list))):
-    sleep(0.1)
-    form_list = big_form_list[n_list]
-    f = open(input_file[0], "r")  # TODO:input_fileをforで回してください。
-    fw = open(output_file[n_list - 1], "w")
+output_file_suffix = [
+              "nva",
+              "all",
+              "noun",
+              "all_without_kigou"
+              ]
 
-    text = f.readline()
 
-    while text:
-        if len(text) < 10:
-            text = f.readline()
-            continue
+media = [
+         "naver",
+         #"yahoo",
+         #"twitter",
+        ]
+
+input_file = [
+              "./rawdata/naver.txt",
+              #"./rawdata/yahoo.txt",
+              #"./rawdata/twitter.txt",
+             ]
+
+
+# ストップワードリストの取得
+#
+stopwords = create_stopwords(get_stopword_path())
+# print(stopwords)
+
+for (md, ifile) in zip(media, input_file):
+
+    for (form, ofile_suffix) in zip(form_option, output_file_suffix):
+
+        print(media)
+        print(form)
+        #form_list = form_option[n_list]
+
+        f = open(ifile, "r")
+        text = f.read()
+        f.close
 
         text = clean_text(text)
         text = zenkaku_hankaku(text)
-        text = wakati_by_mecab(text)
-        text = remove_stopwords(text, stopwords)
-        fw.write(text + "\n")
-        text = f.readline()
 
-    f.close
-    fw.close
+        #text = wakati_by_mecab(text, form)
+        lines = text.splitlines()
+        text = ""
+        for line in lines:
+            text = text + wakati_by_mecab(line, form)
+
+        text = remove_stopwords(text, stopwords)
+
+        ofile = output_file_dir + md + "_" + ofile_suffix + "_wakati.txt"
+        fw = open(ofile, "w")
+        fw.write(text)
+        fw.close
+
 
 t2 = time.time()
 elapsed_time = t2 - t1
-print(f"処理が終了しました。実行時間は{elapsed_time}秒でした")
+print("処理が終了しました。実行時間は " + str(elapsed_time) + " 秒でした")
