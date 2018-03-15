@@ -3,8 +3,8 @@
 # 単語埋め込みベクトル（Word2Vec など）を行うための
 # テキストデータのゴミ取りを行う。
 #
-# 2018.03.14 初期作成 YIPG
-# 2018.03.15 改定 Tomi
+# 2018.03.14 初期作成 伊藤友哉
+# 2018.03.15 改定 富山
 #
 
 import re
@@ -71,29 +71,26 @@ def zenkaku_hankaku(text):
     return re
 
 
-#
-# カタカナ半角を全角に, 数字英字全角を半角に
-#
 # TODO: サーバー上でどうやってNeologd入れる？？
 # できた。Neologdの辞書ファイル(自分は/usr/local/lib/mecab/dic/mecab-ipadic-neologdにあった。)をmecabrc(自分は/usr/local/etc/mecabrcにあった)
 # の辞書参照箇所にコピーする。(dicdir =  /usr/local/lib/mecab/dic/mecab-ipadic-neologd)。注意点はターミナル起動直後よりも上の階層にいくから、気が付きづらい場所にあること。
 #
 def wakati_by_mecab(text, form):
-    #print("wakati_by_mecab")
-    #print(form)
-    #print(text)
+    # print("wakati_by_mecab")
+    # print(form)
+    # print(text)
     tagger = MeCab.Tagger('')
     tagger.parse('')
     node = tagger.parseToNode(text)
     word_list = []
-    #print("koko")
+    # print("koko")
     while node:
         pos = node.feature.split(",")[0]
 
-        #print(pos)
-        #print(form)
+        # print(pos)
+        # print(form)
 
-        #if pos in form_list:   # 対象とする品詞
+        # if pos in form_list:   # 対象とする品詞
         if pos in form:   # 対象とする品詞
             word = node.surface
             word_list.append(word)
@@ -103,7 +100,7 @@ def wakati_by_mecab(text, form):
 
 #
 # ストップワードテキストファイルのパスの取得
-# ※このプログラムと同じディレクトリに保管してください
+# ※ストップワードテキストは、このプログラムと同じディレクトリに保管してください
 #
 def get_stopword_path():
     name = os.path.dirname(os.path.abspath(__name__))
@@ -143,7 +140,8 @@ print("処理開始しました")
 
 form_option = [
     ["名詞", "動詞", "形容詞"],
-    ["名詞", "動詞", "形容詞", "感動詞", "副詞", "助詞", "記号", "接頭詞", "助動詞", "連体詞", "フィラー", "その他"],
+    ["名詞", "動詞", "形容詞", "感動詞", "副詞", "助詞", "記号",
+        "接頭詞", "助動詞", "連体詞", "フィラー", "その他"],
     ["名詞"],
     ["名詞", "動詞", "形容詞", "感動詞", "副詞", "助詞", "接頭詞", "助動詞", "連体詞", "フィラー", "その他"]
 ]
@@ -151,24 +149,24 @@ form_option = [
 output_file_dir = "./wakati_data/"
 
 output_file_suffix = [
-              "nva",
-              "all",
-              "noun",
-              "all_without_kigou"
-              ]
+    "nva",
+    "all",
+    "noun",
+    "all_without_kigou"
+]
 
 
 media = [
-         "naver",
-         #"yahoo",
-         #"twitter",
-        ]
+    "naver",
+    #"yahoo",
+    #"twitter",
+]
 
 input_file = [
-              "./rawdata/naver.txt",
-              #"./rawdata/yahoo.txt",
-              #"./rawdata/twitter.txt",
-             ]
+    "./rawdata/naver.txt",
+    #"./rawdata/yahoo.txt",
+    #"./rawdata/twitter.txt",
+]
 
 
 # ストップワードリストの取得
@@ -193,9 +191,9 @@ for (md, ifile) in zip(media, input_file):
 
         #text = wakati_by_mecab(text, form)
         lines = text.splitlines()
-        text = ""
+        text = ""  # これでは前の処理を全て駄目にしている。
         for line in lines:
-            text = text + wakati_by_mecab(line, form)
+            text = text + wakati_by_mecab(line, form) + "\n" # 改行コードを入れました。
 
         text = remove_stopwords(text, stopwords)
 
