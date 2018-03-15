@@ -115,10 +115,15 @@ big_form_list = [
     ["名詞", "動詞", "形容詞", "感動詞", "副詞", "助詞", "接頭詞", "助動詞", "連体詞", "フィラー", "その他"]
 ]
 
-input_file = ["./rawdata/twitter.txt",
-              "./rawdata/naver.txt", "./rawdata/yahoo.txt"]
-output_file = ["./wakati_data/twitter.txt", "./wakati_data/twitter_allform_wakati.txt",
-               "./wakati_data/twitter_noun_wakati.txt", "./wakati_data/twitter_without_kigou_wakati.txt"]
+dir_data = "./rawdata/"
+dir_output = "./wakati_data/"
+dir_clensed = "./clensed_data/"
+input_file = ["twitter.txt",
+              "naver.txt", "yahoo.txt"]
+input_file_dir=[]
+for i in input_file:
+    str=dir_data + 
+    input_file_dir.append(i)
 
 for n_list in tqdm(range(len(big_form_list))):
     sleep(0.1)
