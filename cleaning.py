@@ -2,6 +2,7 @@ import re
 import mojimoji
 import sys
 import MeCab
+from gensim import corpora
 import os
 import time
 from tqdm import tqdm
@@ -94,16 +95,29 @@ def create_stopwords(file_path):  # ストップワードのリスト(stopwords)
 stopwords = create_stopwords(get_stopword_path())
 # print(stopwords)
 
-
 # ストップワード除去 #TODO:こいつ変えなきゃヤヴァイ。引数にリストじゃなくてテキストをもってくるようにする。
-def remove_stopwords(words, stopwords):
-    words = [word for word in words if word not in stopwords]
-    return "".join(words)
+
+
+def wakati_mecab_remove_stopword(text):
+    tagger = MeCab.Tagger('')
+    tagger.parse('')
+    node = tagger.parseToNode(text)
+    word_list = []
+    while node:
+        pos = node.feature.split(",")[0]
+        if pos in form_list:   # 対象とする品詞
+            word = node.surface
+            word_list.append(word)
+        node = node.next
+    # ここでストップワードを除去しています
+    word_list = [word for word in word_list if word not in stopwords]
+    return " ".join(word_list)
 
 
 # 実行する
 
 #form_list = ["名詞", "動詞", "形容詞", "感動詞", "副詞", "助詞","記号", "接頭詞", "助動詞", "連体詞", "フィラー", "その他"]
+
 
 t1 = time.time()
 print("処理開始しました")
@@ -118,14 +132,14 @@ big_form_list = [
 
 input_file = ["./rawdata/sample.txt",
               "./rawdata/twitter.txt", "./rawdata/yahoo.txt"]
-output_file = ["./wakati_data/sample.txt", "./wakati_data/sample_allform_wakati.txt",
+output_file = ["./wakati_data/sample_nva.txt", "./wakati_data/sample_allform_wakati.txt",
                "./wakati_data/sample_noun_wakati.txt", "./wakati_data/sample_without_kigou_wakati.txt"]
 
 for n_list in tqdm(range(len(big_form_list))):
     sleep(0.1)
     form_list = big_form_list[n_list]
     f = open(input_file[0], "r")  # TODO:input_fileをforで回してください。
-    fw = open(output_file[n_list - 1], "w")
+    fw = open(output_file[n_list], "w")
 
     text = f.readline()
 
@@ -136,9 +150,9 @@ for n_list in tqdm(range(len(big_form_list))):
 
         text = clean_text(text)
         text = zenkaku_hankaku(text)
-        text = wakati_by_mecab(text)
+        # text = wakati_by_mecab(text) #ストップワード除去をしたくない場合はこちらをつかってください。
         # TODO:こいつ変えなきゃヤヴァイ。引数にリストじゃなくてテキストをもってくるようにする。
-        text = remove_stopwords(text, stopwords)
+        text = wakati_mecab_remove_stopword(text)
         fw.write(text + "\n")
         text = f.readline()
 
