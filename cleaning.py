@@ -19,7 +19,7 @@ def clean_text(text):  # ゴミ処理
     replaced_text = re.sub(r'　', ' ', replaced_text)  # 全角空白の除去
     replaced_text = re.sub(r'[가-힣]*', '', replaced_text)  # ハングル削除
     replaced_text = re.sub(
-        r'[0-9]+(時|分|年|月|日|秒|円|点|名|\/|:|-)[0-9]+', '', replaced_text)  # 数字表現を除去
+        r'[0-9]+(時|分|年|月|日|秒|円|点|名|\/|:|-|\.)+[0-9]*', '', replaced_text)  # 数字表現を除去
     replaced_text=''.join(c for c in replaced_text if c not in emoji.UNICODE_EMOJI) #　絵文字除去
     replaced_text = re.sub(r'[가-힣]*', '', replaced_text)  # ハングル削除
     replaced_text = re.sub(r'[{}]', ' ', replaced_text)  # {}の除去
@@ -152,10 +152,10 @@ for n_list in tqdm(range(len(big_form_list))):
         if len(text) < 10:  # 文章として意味を持たないため、10文字以下の文章はスキップ
             text = f.readline()
             continue
+        text = clean_text(text)
         if is_zh(text):  # 中国語の文章はスキップ
             text = f.readline()
             continue
-        text = clean_text(text)
         text = zenkaku_hankaku(text)
         # text = wakati_by_mecab(text) #ストップワード除去をしたくない場合はこちらをつかってください。
         text = wakati_mecab_remove_stopword(text)
