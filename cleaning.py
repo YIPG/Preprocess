@@ -14,7 +14,7 @@ def clean_text(text):  # ゴミ処理
     replaced_text = '\n'.join(s.strip() for s in text.splitlines()[
                               0:] if s != '')  # ヘッダーがあれば削除(このデータはしなくてよい)
     replaced_text = replaced_text.lower()
-    replaced_text = re.sub(r'[■■●★◆◇▼♡]', ' ', replaced_text)
+    replaced_text = re.sub(r'[■■●★◆◇▼♡]', '', replaced_text)
     replaced_text = re.sub(r'　', ' ', replaced_text)  # 全角空白の除去
     replaced_text = re.sub(r'[가-힣]*', '', replaced_text)  # ハングル削除
     replaced_text = re.sub(
@@ -22,14 +22,13 @@ def clean_text(text):  # ゴミ処理
     replaced_text = ''.join(
         c for c in replaced_text if c not in emoji.UNICODE_EMOJI)  # 　絵文字除去
     replaced_text = re.sub(r'[가-힣]*', '', replaced_text)  # ハングル削除
-    replaced_text = re.sub(r'[{}]', ' ', replaced_text)  # {}の除去
-    replaced_text = re.sub(r'\&?[lgr]t;?', ' ', replaced_text)  # rt, gt, ltの除去
-    replaced_text = re.sub(r'[【】]', ' ', replaced_text)       # 【】の除去
-    replaced_text = re.sub(r'[（）()]', ' ', replaced_text)     # （）の除去
-    replaced_text = re.sub(r'[［］\[\]]', ' ', replaced_text)   # ［］の除去
+    replaced_text = re.sub(r'[{}]', '', replaced_text)  # {}の除去
+    replaced_text = re.sub(r'\&?[lgr]t;?', '', replaced_text)  # rt, gt, ltの除去
+    replaced_text = re.sub(r'[【】]', '', replaced_text)       # 【】の除去
+    replaced_text = re.sub(r'[（）()]', '', replaced_text)     # （）の除去
+    replaced_text = re.sub(r'[［］\[\]]', '', replaced_text)   # ［］の除去
     replaced_text = re.sub(r'[@＠]\w+', '', replaced_text)  # メンションの除去
-    replaced_text = re.sub(r'[#][\w一-龥ぁ-んァ-ン]+', '',
-                           replaced_text)  # ハッシュタグの除去
+    replaced_text = re.sub(r'[#][\w一-龥ぁ-んァ-ン]+', '', replaced_text)  # ハッシュタグの除去
     replaced_text = re.sub(r'https?:\/\/.*', '', replaced_text)  # URLの除去
     replaced_text = re.sub(r'pic\.twitter\.com\/.*', '',
                            replaced_text)  # pic.twitter.com/の除去
@@ -157,9 +156,9 @@ for n_list in tqdm(range(len(big_form_list))):
         if is_zh(text):  # 中国語の文章はスキップ
             text = f.readline()
             continue
-        if text=="\n":
-            text = f.readline()
-            continue
+        # if text=="\n":
+        #     text = f.readline()
+        #     continue
         text = zenkaku_hankaku(text)
         # text = wakati_by_mecab(text) #ストップワード除去をしたくない場合はこちらをつかってください。
         text = wakati_mecab_remove_stopword(text)
