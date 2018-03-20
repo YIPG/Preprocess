@@ -123,7 +123,7 @@ def wakati_by_mecab(text, form):
 # ※　環境に合わせて、Neologdの格納ディレクトリを書き換えること
 #
 def wakati_mecab_remove_stopword(text, form):
-    tagger = MeCab.Tagger('-d /usr/lib64/mecab/dic/mecab-ipadic-neologd')
+    tagger = MeCab.Tagger('-d /usr/local/lib/mecab/dic/mecab-ipadic-neologd')
     tagger.parse('')
     node = tagger.parseToNode(text)
     word_list = []
@@ -242,7 +242,7 @@ for (md, ifile) in zip(media, input_file):
                 line = f.readline()
                 continue
             if is_zh(line):  # 中国語の文章はスキップ
-                text = f.readline()
+                line = f.readline()
                 continue
             line = clean_text(line)
             line = zenkaku_hankaku(line)

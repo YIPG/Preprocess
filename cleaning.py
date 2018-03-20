@@ -1,38 +1,34 @@
-# -*- coding: utf-8 -*-
-#
-# 単語埋め込みベクトル（Word2Vec など）を行うための
-# テキストデータのゴミ取りを行う。
-#
-# 2018.03.14 初期作成 伊藤友哉
-# 2018.03.15 改定 富山
-#
-
 import re
 import mojimoji
 import sys
 import MeCab
+from gensim import corpora
+import emoji
 import os
 import time
 from tqdm import tqdm
+from time import sleep
 
 
-#
-# ゴミ処理を行う。中国語除けない
-#
-def clean_text(text):
+def clean_text(text):  # ゴミ処理
     replaced_text = '\n'.join(s.strip() for s in text.splitlines()[
                               0:] if s != '')  # ヘッダーがあれば削除(このデータはしなくてよい)
     replaced_text = replaced_text.lower()
-    replaced_text = re.sub(r'[■■●★◆◇▼♡]', ' ', replaced_text)
-    replaced_text = re.sub(r'[0-9]*(時|分|年|月|日|秒|円)', '', replaced_text)  # 注意！
-    replaced_text = re.sub(r'[{}]', ' ', replaced_text)
-    replaced_text = re.sub(r'\&[lgr]t;', ' ', replaced_text)
-    replaced_text = re.sub(r'[【】]', ' ', replaced_text)       # 【】の除去
-    replaced_text = re.sub(r'[（）()]', ' ', replaced_text)     # （）の除去
-    replaced_text = re.sub(r'[［］\[\]]', ' ', replaced_text)   # ［］の除去
+    replaced_text = re.sub(r'[■■●★◆◇▼♡]', '', replaced_text)
+    replaced_text = re.sub(r'　', ' ', replaced_text)  # 全角空白の除去
+    replaced_text = re.sub(r'[가-힣]*', '', replaced_text)  # ハングル削除
+    replaced_text = re.sub(
+        r'[0-9]+(時|分|年|月|日|秒|円|点|名|\/|:|-|\.)+[0-9]*', '', replaced_text)  # 数字表現を除去
+    replaced_text = ''.join(
+        c for c in replaced_text if c not in emoji.UNICODE_EMOJI)  # 　絵文字除去
+    replaced_text = re.sub(r'[가-힣]*', '', replaced_text)  # ハングル削除
+    replaced_text = re.sub(r'[{}]', '', replaced_text)  # {}の除去
+    replaced_text = re.sub(r'\&?[lgr]t;?', '', replaced_text)  # rt, gt, ltの除去
+    replaced_text = re.sub(r'[【】]', '', replaced_text)       # 【】の除去
+    replaced_text = re.sub(r'[（）()]', '', replaced_text)     # （）の除去
+    replaced_text = re.sub(r'[［］\[\]]', '', replaced_text)   # ［］の除去
     replaced_text = re.sub(r'[@＠]\w+', '', replaced_text)  # メンションの除去
-    replaced_text = re.sub(r'[#][\w一-龥ぁ-んァ-ン]+', '',
-                           replaced_text)  # ハッシュタグの除去
+    replaced_text = re.sub(r'[#][\w一-龥ぁ-んァ-ン]+', '', replaced_text)  # ハッシュタグの除去
     replaced_text = re.sub(r'https?:\/\/.*', '', replaced_text)  # URLの除去
     replaced_text = re.sub(r'pic\.twitter\.com\/.*', '',
                            replaced_text)  # pic.twitter.com/の除去
@@ -57,62 +53,48 @@ def clean_text(text):
         r'(news|blog|fc2|headlines|link)(\.|\/).*', '', replaced_text)
     replaced_text = re.sub(r'([a-z]\&)?(amp|mp);[a-z]', '', replaced_text)
     replaced_text = re.sub(r'写真=.*', '', replaced_text)
-    replaced_text = re.sub(r'　', ' ', replaced_text)  # 全角空白の除去
-    replaced_text = re.sub(r'[가-힣]*', '', replaced_text)  # ハングル削除
+
     return replaced_text
 
 
-#
-# カタカナ半角を全角に, 数字英字全角を半角に
-#
-def zenkaku_hankaku(text):
+def is_zh(in_str):  # 中国語(簡体字を含む文)除去
+    """
+    SJISに変換して文字数が減れば簡体字があるので中国語
+    """
+    return (set(in_str) - set(in_str.encode('sjis', 'ignore').decode('sjis'))) != set([])
+
+
+def zenkaku_hankaku(text):  # カタカナ半角を全角に, 数字英字全角を半角に
     re = mojimoji.zen_to_han(text, kana=False)
     re = mojimoji.han_to_zen(re, digit=False, ascii=False)
     return re
 
 
-# TODO: サーバー上でどうやってNeologd入れる？？
-# できた。Neologdの辞書ファイル(自分は/usr/local/lib/mecab/dic/mecab-ipadic-neologdにあった。)をmecabrc(自分は/usr/local/etc/mecabrcにあった)
-# の辞書参照箇所にコピーする。(dicdir =  /usr/local/lib/mecab/dic/mecab-ipadic-neologd)。注意点はターミナル起動直後よりも上の階層にいくから、気が付きづらい場所にあること。
-#
-def wakati_by_mecab(text, form):
-    # print("wakati_by_mecab")
-    # print(form)
-    # print(text)
+def wakati_by_mecab(text):  # mecabで分かち書きする
     tagger = MeCab.Tagger('')
     tagger.parse('')
     node = tagger.parseToNode(text)
     word_list = []
-    # print("koko")
     while node:
         pos = node.feature.split(",")[0]
-
-        # print(pos)
-        # print(form)
-
-        # if pos in form_list:   # 対象とする品詞
-        if pos in form:   # 対象とする品詞
+        if pos in form_list:   # 対象とする品詞
             word = node.surface
             word_list.append(word)
         node = node.next
     return " ".join(word_list)
 
+# Neologdの入れ方。Neologdの辞書ファイル(自分は/usr/local/lib/mecab/dic/mecab-ipadic-neologdにあった。)をmecabrc(自分は/usr/local/etc/mecabrcにあった)
+# の辞書参照箇所にコピーする。(該当箇所はdicdir =  /usr/local/lib/mecab/dic/mecab-ipadic-neologd)。注意点はターミナル起動直後よりも上の階層にいくから、気が付きづらい場所にあること。
 
-#
-# ストップワードテキストファイルのパスの取得
-# ※ストップワードテキストは、このプログラムと同じディレクトリに保管してください
-#
-def get_stopword_path():
+
+def get_stopword_path():  # ストップワードのパスを取得。ストップワードテキストファイルはこのプログラムと同じディレクトリに保管してください
     name = os.path.dirname(os.path.abspath(__name__))
     joined_path = os.path.join(name, './stopwords.txt')
     data_path = os.path.normpath(joined_path)
     return data_path
 
 
-#
-# ストップワードのリスト(stopwords)作成
-#
-def create_stopwords(file_path):
+def create_stopwords(file_path):  # ストップワードのリスト(stopwords)作成
     stopwords = []
     for w in open(file_path, "r"):
         w = w.replace('\n', '')
@@ -121,24 +103,30 @@ def create_stopwords(file_path):
     return stopwords
 
 
-#
-# ストップワード除去
-#
-def remove_stopwords(words, stopwords):
-    words = [word for word in words if word not in stopwords]
-    return "".join(words)
+def wakati_mecab_remove_stopword(text):  # Mecab & ストップワード除去
+    tagger = MeCab.Tagger('')
+    tagger.parse('')
+    node = tagger.parseToNode(text)
+    word_list = []
+    while node:
+        pos = node.feature.split(",")[0]
+        if pos in form_list:   # 対象とする品詞
+            word = node.surface
+            word_list.append(word)
+        node = node.next
+    # ここでストップワードを除去します
+    # ストップワードリスト
+    stopwords = create_stopwords(get_stopword_path())
+    word_list = [word for word in word_list if word not in stopwords]
+    return " ".join(word_list)
 
 
-#
-# 実行プログラム
-#
-
-#form_list = ["名詞", "動詞", "形容詞", "感動詞", "副詞", "助詞","記号", "接頭詞", "助動詞", "連体詞", "フィラー", "その他"]
+# 実行する
 
 t1 = time.time()
 print("処理開始しました")
 
-form_option = [
+big_form_list = [
     ["名詞", "動詞", "形容詞"],
     ["名詞", "動詞", "形容詞", "感動詞", "副詞", "助詞", "記号",
         "接頭詞", "助動詞", "連体詞", "フィラー", "その他"],
@@ -146,63 +134,44 @@ form_option = [
     ["名詞", "動詞", "形容詞", "感動詞", "副詞", "助詞", "接頭詞", "助動詞", "連体詞", "フィラー", "その他"]
 ]
 
-output_file_dir = "./wakati_data/"
-
-output_file_suffix = [
-    "nva",
-    "all",
-    "noun",
-    "all_without_kigou"
-]
+input_file = ["./rawdata/sample.txt",
+              "./rawdata/twitter.txt", "./rawdata/yahoo.txt"]
+output_file = ["./wakati_data/sample_nva.txt", "./wakati_data/sample_allform_wakati.txt",
+               "./wakati_data/sample_noun_wakati.txt", "./wakati_data/sample_without_kigou_wakati.txt"]
 
 
-media = [
-    "naver",
-    #"yahoo",
-    #"twitter",
-]
+for n_list in tqdm(range(len(big_form_list))):
+    sleep(0.1)
+    form_list = big_form_list[n_list]
+    f = open(input_file[0], "r")  # TODO:input_fileをforで回す。
+    fw = open(output_file[n_list], "w")
 
-input_file = [
-    "./rawdata/naver.txt",
-    #"./rawdata/yahoo.txt",
-    #"./rawdata/twitter.txt",
-]
+    text = f.readline()
 
-
-# ストップワードリストの取得
-#
-stopwords = create_stopwords(get_stopword_path())
-# print(stopwords)
-
-for (md, ifile) in zip(media, input_file):
-
-    for (form, ofile_suffix) in zip(form_option, output_file_suffix):
-
-        print(media)
-        print(form)
-        #form_list = form_option[n_list]
-
-        f = open(ifile, "r")
-        text = f.read()
-        f.close
-
+    while text:
+        if len(text) < 10:  # 文章として意味を持たないため、10文字以下の文章はスキップ
+            text = f.readline()
+            continue
         text = clean_text(text)
+        if is_zh(text):  # 中国語の文章はスキップ
+            text = f.readline()
+            continue
+        # if text=="\n":
+        #     text = f.readline()
+        #     continue
         text = zenkaku_hankaku(text)
+        # text = wakati_by_mecab(text) #ストップワード除去をしたくない場合はこちらをつかってください。
+        text = wakati_mecab_remove_stopword(text)
+        if text=="":
+            text = f.readline()
+            continue
+        fw.write(text + "\n")
+        text = f.readline()
 
-        #text = wakati_by_mecab(text, form)
-        lines = text.splitlines()
-        text = ""  # これでは前の処理を全て駄目にしている。
-        for line in lines:
-            text = text + wakati_by_mecab(line, form) + "\n" # 改行コードを入れました。
-
-        text = remove_stopwords(text, stopwords)
-
-        ofile = output_file_dir + md + "_" + ofile_suffix + "_wakati.txt"
-        fw = open(ofile, "w")
-        fw.write(text)
-        fw.close
-
+    f.close
+    fw.close
 
 t2 = time.time()
 elapsed_time = t2 - t1
-print("処理が終了しました。実行時間は " + str(elapsed_time) + " 秒でした")
+
+print(f"処理が終了しました。実行時間は{elapsed_time}秒でした")
