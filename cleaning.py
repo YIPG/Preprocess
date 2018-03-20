@@ -58,7 +58,7 @@ def zenkaku_hankaku(text):  # カタカナ半角を全角に, 数字英字全角
     return re
 
 
-def wakati_by_mecab(text):
+def wakati_by_mecab(text):  # mecabで分かち書きする
     tagger = MeCab.Tagger('')
     tagger.parse('')
     node = tagger.parseToNode(text)
@@ -70,12 +70,12 @@ def wakati_by_mecab(text):
             word_list.append(word)
         node = node.next
     return " ".join(word_list)
-# TODO: サーバー上でどうやってNeologd入れる？？
-# できた。Neologdの辞書ファイル(自分は/usr/local/lib/mecab/dic/mecab-ipadic-neologdにあった。)をmecabrc(自分は/usr/local/etc/mecabrcにあった)
-# の辞書参照箇所にコピーする。(dicdir =  /usr/local/lib/mecab/dic/mecab-ipadic-neologd)。注意点はターミナル起動直後よりも上の階層にいくから、気が付きづらい場所にあること。
+
+# Neologdの入れ方。Neologdの辞書ファイル(自分は/usr/local/lib/mecab/dic/mecab-ipadic-neologdにあった。)をmecabrc(自分は/usr/local/etc/mecabrcにあった)
+# の辞書参照箇所にコピーする。(該当箇所はdicdir =  /usr/local/lib/mecab/dic/mecab-ipadic-neologd)。注意点はターミナル起動直後よりも上の階層にいくから、気が付きづらい場所にあること。
 
 
-def get_stopword_path():  # ストップワードテキストファイルはこのプログラムと同じディレクトリに保管してください
+def get_stopword_path():  # ストップワードのパスを取得。ストップワードテキストファイルはこのプログラムと同じディレクトリに保管してください
     name = os.path.dirname(os.path.abspath(__name__))
     joined_path = os.path.join(name, './stopwords.txt')
     data_path = os.path.normpath(joined_path)
@@ -91,14 +91,7 @@ def create_stopwords(file_path):  # ストップワードのリスト(stopwords)
     return stopwords
 
 
-# ストップワードリスト
-stopwords = create_stopwords(get_stopword_path())
-# print(stopwords)
-
-# ストップワード除去 #TODO:こいつ変えなきゃヤヴァイ。引数にリストじゃなくてテキストをもってくるようにする。
-
-
-def wakati_mecab_remove_stopword(text):
+def wakati_mecab_remove_stopword(text):  # Mecab & ストップワード除去
     tagger = MeCab.Tagger('')
     tagger.parse('')
     node = tagger.parseToNode(text)
@@ -109,15 +102,14 @@ def wakati_mecab_remove_stopword(text):
             word = node.surface
             word_list.append(word)
         node = node.next
-    # ここでストップワードを除去しています
+    # ここでストップワードを除去します
+    # ストップワードリスト
+    stopwords = create_stopwords(get_stopword_path())
     word_list = [word for word in word_list if word not in stopwords]
     return " ".join(word_list)
 
 
 # 実行する
-
-#form_list = ["名詞", "動詞", "形容詞", "感動詞", "副詞", "助詞","記号", "接頭詞", "助動詞", "連体詞", "フィラー", "その他"]
-
 
 t1 = time.time()
 print("処理開始しました")
@@ -138,7 +130,7 @@ output_file = ["./wakati_data/sample_nva.txt", "./wakati_data/sample_allform_wak
 for n_list in tqdm(range(len(big_form_list))):
     sleep(0.1)
     form_list = big_form_list[n_list]
-    f = open(input_file[0], "r")  # TODO:input_fileをforで回してください。
+    f = open(input_file[0], "r")  # TODO:input_fileをforで回す。
     fw = open(output_file[n_list], "w")
 
     text = f.readline()
@@ -151,7 +143,6 @@ for n_list in tqdm(range(len(big_form_list))):
         text = clean_text(text)
         text = zenkaku_hankaku(text)
         # text = wakati_by_mecab(text) #ストップワード除去をしたくない場合はこちらをつかってください。
-        # TODO:こいつ変えなきゃヤヴァイ。引数にリストじゃなくてテキストをもってくるようにする。
         text = wakati_mecab_remove_stopword(text)
         fw.write(text + "\n")
         text = f.readline()
@@ -161,4 +152,5 @@ for n_list in tqdm(range(len(big_form_list))):
 
 t2 = time.time()
 elapsed_time = t2 - t1
+
 print(f"処理が終了しました。実行時間は{elapsed_time}秒でした")
