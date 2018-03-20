@@ -52,6 +52,12 @@ def clean_text(text):  # ゴミ処理, 中国語除けない
     return replaced_text
 
 
+def is_zh(in_str): # 中国語(簡体字を含む文)除去
+    """
+    SJISに変換して文字数が減れば簡体字があるので中国語
+    """
+    return (set(in_str) - set(in_str.encode('sjis','ignore').decode('sjis'))) != set([])
+
 def zenkaku_hankaku(text):  # カタカナ半角を全角に, 数字英字全角を半角に
     re = mojimoji.zen_to_han(text, kana=False)
     re = mojimoji.han_to_zen(re, digit=False, ascii=False)
@@ -136,10 +142,10 @@ for n_list in tqdm(range(len(big_form_list))):
     text = f.readline()
 
     while text:
-        if len(text) < 10:
+        if len(text) < 10: # 文章として意味を持たないため、10文字以下の文章はスキップ
             text = f.readline()
             continue
-
+        if is_zh(text): continue # 中国語の文章はスキップ
         text = clean_text(text)
         text = zenkaku_hankaku(text)
         # text = wakati_by_mecab(text) #ストップワード除去をしたくない場合はこちらをつかってください。
