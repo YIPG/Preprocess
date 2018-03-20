@@ -162,6 +162,9 @@ for n_list in tqdm(range(len(big_form_list))):
         text = zenkaku_hankaku(text)
         # text = wakati_by_mecab(text) #ストップワード除去をしたくない場合はこちらをつかってください。
         text = wakati_mecab_remove_stopword(text)
+        if text=="":
+            text = f.readline()
+            continue
         fw.write(text + "\n")
         text = f.readline()
 
