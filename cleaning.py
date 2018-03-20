@@ -135,10 +135,10 @@ big_form_list = [
     ["名詞", "動詞", "形容詞", "感動詞", "副詞", "助詞", "接頭詞", "助動詞", "連体詞", "フィラー", "その他"]
 ]
 
-input_file = ["./rawdata/twitter_raw.txt",
+input_file = ["./rawdata/sample.txt",
               "./rawdata/twitter.txt", "./rawdata/yahoo.txt"]
-output_file = ["./wakati_data/twitter_nva.txt", "./wakati_data/twitter_allform_wakati.txt",
-               "./wakati_data/twitter_noun_wakati.txt", "./wakati_data/twitter_without_kigou_wakati.txt"]
+output_file = ["./wakati_data/sample_nva.txt", "./wakati_data/sample_allform_wakati.txt",
+               "./wakati_data/sample_noun_wakati.txt", "./wakati_data/sample_without_kigou_wakati.txt"]
 
 
 for n_list in tqdm(range(len(big_form_list))):
@@ -155,6 +155,9 @@ for n_list in tqdm(range(len(big_form_list))):
             continue
         text = clean_text(text)
         if is_zh(text):  # 中国語の文章はスキップ
+            text = f.readline()
+            continue
+        if text=="\n":
             text = f.readline()
             continue
         text = zenkaku_hankaku(text)
