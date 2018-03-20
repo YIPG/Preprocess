@@ -10,7 +10,6 @@ from tqdm import tqdm
 from time import sleep
 
 
-
 def clean_text(text):  # ゴミ処理
     replaced_text = '\n'.join(s.strip() for s in text.splitlines()[
                               0:] if s != '')  # ヘッダーがあれば削除(このデータはしなくてよい)
@@ -20,7 +19,8 @@ def clean_text(text):  # ゴミ処理
     replaced_text = re.sub(r'[가-힣]*', '', replaced_text)  # ハングル削除
     replaced_text = re.sub(
         r'[0-9]+(時|分|年|月|日|秒|円|点|名|\/|:|-|\.)+[0-9]*', '', replaced_text)  # 数字表現を除去
-    replaced_text=''.join(c for c in replaced_text if c not in emoji.UNICODE_EMOJI) #　絵文字除去
+    replaced_text = ''.join(
+        c for c in replaced_text if c not in emoji.UNICODE_EMOJI)  # 　絵文字除去
     replaced_text = re.sub(r'[가-힣]*', '', replaced_text)  # ハングル削除
     replaced_text = re.sub(r'[{}]', ' ', replaced_text)  # {}の除去
     replaced_text = re.sub(r'\&?[lgr]t;?', ' ', replaced_text)  # rt, gt, ltの除去
@@ -135,10 +135,11 @@ big_form_list = [
     ["名詞", "動詞", "形容詞", "感動詞", "副詞", "助詞", "接頭詞", "助動詞", "連体詞", "フィラー", "その他"]
 ]
 
-input_file = ["./rawdata/sample.txt",
+input_file = ["./rawdata/twitter_raw.txt",
               "./rawdata/twitter.txt", "./rawdata/yahoo.txt"]
-output_file = ["./wakati_data/sample_nva.txt", "./wakati_data/sample_allform_wakati.txt",
-               "./wakati_data/sample_noun_wakati.txt", "./wakati_data/sample_without_kigou_wakati.txt"]
+output_file = ["./wakati_data/twitter_nva.txt", "./wakati_data/twitter_allform_wakati.txt",
+               "./wakati_data/twitter_noun_wakati.txt", "./wakati_data/twitter_without_kigou_wakati.txt"]
+
 
 for n_list in tqdm(range(len(big_form_list))):
     sleep(0.1)
