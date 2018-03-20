@@ -151,6 +151,7 @@ for n_list in tqdm(range(len(big_form_list))):
             text = f.readline()
             continue
         if is_zh(text):  # 中国語の文章はスキップ
+            text = f.readline()
             continue
         text = clean_text(text)
         text = zenkaku_hankaku(text)
