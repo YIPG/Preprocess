@@ -6,8 +6,14 @@ from gensim import corpora
 import emoji
 import os
 import time
+import glob
 from tqdm import tqdm
 from time import sleep
+
+# TODO: 品詞の数で厳選
+
+# TODO:表記ゆれをとりたい
+辞書をつくる
 
 
 def clean_text(text):  # ゴミ処理
@@ -22,13 +28,15 @@ def clean_text(text):  # ゴミ処理
     replaced_text = ''.join(
         c for c in replaced_text if c not in emoji.UNICODE_EMOJI)  # 　絵文字除去
     replaced_text = re.sub(r'[가-힣]*', '', replaced_text)  # ハングル削除
+    replaced_text = re.sub(r'[w]{2,}', '', replaced_text)  # wwの削除
     replaced_text = re.sub(r'[{}]', '', replaced_text)  # {}の除去
     replaced_text = re.sub(r'\&?[lgr]t;?', '', replaced_text)  # rt, gt, ltの除去
     replaced_text = re.sub(r'[【】]', '', replaced_text)       # 【】の除去
     replaced_text = re.sub(r'[（）()]', '', replaced_text)     # （）の除去
     replaced_text = re.sub(r'[［］\[\]]', '', replaced_text)   # ［］の除去
     replaced_text = re.sub(r'[@＠]\w+', '', replaced_text)  # メンションの除去
-    replaced_text = re.sub(r'[#][\w一-龥ぁ-んァ-ン]+', '', replaced_text)  # ハッシュタグの除去
+    replaced_text = re.sub(r'[#][\w一-龥ぁ-んァ-ン]+', '',
+                           replaced_text)  # ハッシュタグの除去
     replaced_text = re.sub(r'https?:\/\/.*', '', replaced_text)  # URLの除去
     replaced_text = re.sub(r'pic\.twitter\.com\/.*', '',
                            replaced_text)  # pic.twitter.com/の除去
@@ -128,15 +136,15 @@ print("処理開始しました")
 
 big_form_list = [
     ["名詞", "動詞", "形容詞"],
-    ["名詞", "動詞", "形容詞", "感動詞", "副詞", "助詞", "記号",
-        "接頭詞", "助動詞", "連体詞", "フィラー", "その他"],
-    ["名詞"],
-    ["名詞", "動詞", "形容詞", "感動詞", "副詞", "助詞", "接頭詞", "助動詞", "連体詞", "フィラー", "その他"]
+    #["名詞", "動詞", "形容詞", "感動詞", "副詞", "助詞", "記号",
+    #    "接頭詞", "助動詞", "連体詞", "フィラー", "その他"],
+    #["名詞"],
+    #["名詞", "動詞", "形容詞", "感動詞", "副詞", "助詞", "接頭詞", "助動詞", "連体詞", "フィラー", "その他"]
 ]
 
-input_file = ["./rawdata/sample.txt",
+input_file = ["./rawdata/twitter20171011.txt",
               "./rawdata/twitter.txt", "./rawdata/yahoo.txt"]
-output_file = ["./wakati_data/sample_nva.txt", "./wakati_data/sample_allform_wakati.txt",
+output_file = ["./wakati_data/twitter20171011_nva.txt", "./wakati_data/sample_allform_wakati.txt",
                "./wakati_data/sample_noun_wakati.txt", "./wakati_data/sample_without_kigou_wakati.txt"]
 
 
@@ -162,7 +170,7 @@ for n_list in tqdm(range(len(big_form_list))):
         text = zenkaku_hankaku(text)
         # text = wakati_by_mecab(text) #ストップワード除去をしたくない場合はこちらをつかってください。
         text = wakati_mecab_remove_stopword(text)
-        if text=="":
+        if text == "":
             text = f.readline()
             continue
         fw.write(text + "\n")
